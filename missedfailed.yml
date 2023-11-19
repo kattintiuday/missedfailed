@@ -1,0 +1,74 @@
+---
+- name: "Including Role that ensures the socks tunnel is setup"
+  hosts: localhost
+  ignore_errors: true
+  connection: local
+  tasks:
+    - name: Role ensures that the socks tunnel is setup
+      import_role:
+        name: ansible-role-event-socks-tunnel
+      vars:
+        acc_id: "{{ blueid_shortcode }}"
+        transaction_id: "{{ tower_job_id }}"
+      when: not (skip_socks | d(false))
+
+- name: "To collect Missed/Failed backups"
+  hosts: localhost
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Start the Block
+      block:
+        - name: "To get Missed/Failed backups for each hour"
+          dsmadmc:
+            command: " select NODE_NAME from events where ( STATUS='Failed' or STATUS='Missed' ) and (COMPLETED>=(current_timestamp - 1 hour) ) and ( schedule_name not like '@%' and schedule_name like 'FAL%' ) order by COMPLETED asc "
+            se: server2
+            id: in04385v
+            pa: passwordpassword
+            dataonly: true
+            comma: true
+          register: missedfailed
+          #failed_when: ("No match found using this criteria" in missedfailed.stdout_lines)
+
+        - name: To dislplay the nodes
+          debug:
+            msg: "{{ missedfailed.stdout_lines }}"
+
+        - name: "To fetch the TCP_NAME"
+          dsmadmc:
+            command: " select tcp_name from nodes where node_name='{{ item }}'"
+            se: server2
+            id: in04385v
+            pa: passwordpassword
+            dataonly: true
+            comma: true
+          register: tcpname
+          loop: "{{ missedfailed.stdout_lines }}"
+          #failed_when: ("No match found using this criteria" in missedfailed.stdout_lines)
+
+        - name: To dislplay tcpnames
+          debug:
+            msg: "{{ tcpname.results | map(attribute='stdout_lines') | list }}"
+
+        - name: To set hostname varabile
+          set_fact:
+            serverlist: "{{ serverlist|default([]) + tcpname.results | map(attribute='stdout_lines') | list | flatten }}"  # flatten makes the multiple list to single list
+
+        - debug:
+            var: serverlist
+
+        - name: "To define clientaction for the missed/failed nodes"
+          dsmadmc:
+            command: " def clientaction {{ item }} action=incr "
+            se: server2
+            id: in04385v
+            pa: passwordpassword
+            dataonly: true
+            comma: true
+          loop: "{{ missedfailed.stdout_lines }}"
+
+      rescue:
+        - fail:
+            msg: "Rescue task executed: There are no any Failed/Missed backups"
+          when: missedfailed.rc != 0
+          failed_when: ("No match found using this criteria" in missedfailed.stdout_lines)
