@@ -1,4 +1,3 @@
----
 - name: "To collect Missed/Failed backups"
   hosts: "{{ execution_node }}"
   become: true
@@ -60,7 +59,8 @@
           when: missedfailed.rc == 11
           failed_when: ("No match found using this criteria" in missedfailed.stdout_lines)
 
-        - fail:
+        - name:
+            debug:
             msg: "Rescue task executed: TSM Server is not up"
           when: missedfailed.rc == 206
-#          failed_when: ("No match found using this criteria" in missedfailed.stdout_lines)      
+          failed_when: ("Unable to establish session with server" in missedfailed.stdout_lines)
