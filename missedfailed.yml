@@ -9,9 +9,9 @@
         - name: "To get Missed/Failed backups for each hour"
           dsmadmc:
             command: " select NODE_NAME from events where ( STATUS='Failed' or STATUS='Missed' ) and (COMPLETED>=(current_timestamp - 1 hour) ) and ( schedule_name not like '@%' and schedule_name like 'FAL%' ) order by COMPLETED asc "
-            se: server2
-            id: in04385v
-            pa: passwordpassword
+            se: "{{ lookup('env', 'tsm_server_node') }}"
+            id: "{{ lookup('env', 'tsm_app_user') }}"
+            pa: "{{ lookup('env', 'tsm_app_password') }}"
             dataonly: true
             comma: true
           register: missedfailed
@@ -24,9 +24,9 @@
         - name: "To fetch the TCP_NAME"
           dsmadmc:
             command: " select tcp_name from nodes where node_name='{{ item }}'"
-            se: server2
-            id: in04385v
-            pa: passwordpassword
+            se: "{{ lookup('env', 'tsm_server_node') }}"
+            id: "{{ lookup('env', 'tsm_app_user') }}"
+            pa: "{{ lookup('env', 'tsm_app_password') }}"
             dataonly: true
             comma: true
           register: tcpname
@@ -47,9 +47,9 @@
         - name: "To define clientaction for the missed/failed nodes"
           dsmadmc:
             command: " def clientaction {{ item }} action=incr "
-            se: server2
-            id: in04385v
-            pa: passwordpassword
+            se: "{{ lookup('env', 'tsm_server_node') }}"
+            id: "{{ lookup('env', 'tsm_app_user') }}"
+            pa: "{{ lookup('env', 'tsm_app_password') }}"
             dataonly: true
             comma: true
           loop: "{{ missedfailed.stdout_lines }}"
