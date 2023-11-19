@@ -1,6 +1,6 @@
 ---
 - name: "To collect Missed/Failed backups"
-  hosts: ansible-lab
+  hosts: "{{ execution_node }}"
   become: true
   gather_facts: false
   tasks:
