@@ -57,5 +57,5 @@
       rescue:
         - fail:
             msg: "Rescue task executed: There are no any Failed/Missed backups"
-          when: missedfailed.rc = 11
+          when: missedfailed.rc == 11
           failed_when: ("No match found using this criteria" in missedfailed.stdout_lines)
