@@ -1,17 +1,4 @@
 ---
-- name: "Including Role that ensures the socks tunnel is setup"
-  hosts: localhost
-  ignore_errors: true
-  connection: local
-  tasks:
-    - name: Role ensures that the socks tunnel is setup
-      import_role:
-        name: ansible-role-event-socks-tunnel
-      vars:
-        acc_id: "{{ blueid_shortcode }}"
-        transaction_id: "{{ tower_job_id }}"
-      when: not (skip_socks | d(false))
-
 - name: "To collect Missed/Failed backups"
   hosts: ansible-lab
   become: true
