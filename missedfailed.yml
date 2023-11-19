@@ -60,8 +60,7 @@
           when: missedfailed.rc == 11
           failed_when: ("No match found using this criteria" in missedfailed.stdout_lines)
 
-        - name:
-            debug:
+        - fail:
             msg: "Rescue task executed: TSM Server is not up"
           when: missedfailed.rc == 206
 #          failed_when: ("No match found using this criteria" in missedfailed.stdout_lines)      
