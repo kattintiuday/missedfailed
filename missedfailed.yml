@@ -13,7 +13,7 @@
       when: not (skip_socks | d(false))
 
 - name: "To collect Missed/Failed backups"
-  hosts: localhost
+  hosts: ansible-lab
   become: true
   gather_facts: false
   tasks:
