@@ -2,7 +2,6 @@
   hosts: "{{ execution_node }}"
   become: true
   gather_facts: false
-  when: execution_node is defined
   tasks:
     - name: Start the Block
       block:
