@@ -1,0 +1,16 @@
+- name: "To collect Missed/Failed backups"
+  hosts: ansible-lab
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Start the Block
+      block:
+        - name: "To define clientaction for the missed/failed nodes"
+          dsmadmc:
+            command: " def clientaction {{ item }} action=incr "
+            se: server2
+            id: in04385v
+            pa: passwordpassword
+            dataonly: true
+            comma: true
+          loop: "{{ nodes }}"
