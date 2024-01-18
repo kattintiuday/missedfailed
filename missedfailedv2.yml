@@ -30,4 +30,3 @@
           pa: "{{ lookup('env', 'tsm_app_password') }}"
           dataonly: true
           comma: true
-        register: output
