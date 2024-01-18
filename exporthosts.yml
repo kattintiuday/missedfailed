@@ -1,0 +1,49 @@
+- name: "To collect Missed/Failed backups and modify servernames"
+  hosts: localhost
+  gather_facts: true
+  vars:
+    execution_nodes:
+      - appserver01
+      - appserver02
+    servernames: []
+
+  tasks:
+    - name: Debug and set_fact
+      debug:
+        msg: "This is {{ item }}"
+      loop: "{{ execution_nodes }}"
+
+    - name: Set servernames fact
+      set_fact:
+        servernames: "{{ servernames + [servername] }}"
+      loop: "{{ execution_nodes }}"
+      loop_control:
+        loop_var: servername
+
+    - name: Set servernames fact
+      set_fact:
+        servername: "{{ item }}"
+      loop: "{{ execution_nodes }}"
+
+    #- name: Modify servernames (replace 'appserver' with 'appserver05')
+    #  set_fact:
+    #    servernames: "{{ servernames | map('regex_replace', '^appserver', 'appserver05') | list }}"
+
+    - name: Debug modified servernames
+      debug:
+        var: servernames
+
+    - name: Add modified servers to the inventory
+      add_host:
+        name: "{{ item }}"
+        groups: modified_servernames
+      loop: "{{ servernames }}"
+      run_once: true
+
+- name: "To check the modified variable is available"
+  hosts: "{{ groups['modified_servernames'] }}"
+  gather_facts: true
+  tasks:
+    - name: To print modified servernames as per hosts
+      debug:
+        var: servername
