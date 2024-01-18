@@ -1,0 +1,33 @@
+---
+- name: 'Including Role for Socks Tunel'
+  hosts: localhost
+  ignore_errors: true
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Role ensures that the socks tunnel is setup
+      import_role:
+        name: ansible-role-event-socks-tunnel
+      vars:
+        acc_id: "{{ blueid_shortcode }}"
+        transaction_id: "{{ tower_job_id }}"
+      when: not (skip_socks | d(false))
+
+- name: Delegate tasks to tsm execution node (jh_delegate_to_ip)
+  hosts: "{{ jh_delegate_to_ip }}"
+  vars:
+      ansible_user: "{{ jh_user }}"
+      ansible_ssh_private_key_file: "{{ jh_ssh_private_key_file }}"
+      ansible_ssh_common_args: "{{ jh_ssh_extra_args }}"
+      ansible_ssh_host_key_checking: false
+
+  tasks:
+      - name: " To Fetch the backup missed/failed from TSM Server"
+        dsmadmc:
+          command: "select SUBSTR(CHAR(s.server_name),1,14) as TSM_SERVER ,e.NODE_NAME,e.schedule_name,(select tcp_name from nodes n where e.node_name=n.node_name),(select PLATFORM_NAME from nodes n1 where e.node_name=n1.node_name) from events e,status s where ( e.STATUS='Failed' or e.STATUS='Missed' ) and (e.COMPLETED>=(current_timestamp - 24 hour) ) and ( e.schedule_name not like '@%' and e.schedule_name like 'ARC%') >> /tmp/Re_Runbackups.csv"
+          se: "{{ lookup('env', 'tsm_server_node') }}"
+          id: "{{ lookup('env', 'tsm_app_user') }}"
+          pa: "{{ lookup('env', 'tsm_app_password') }}"
+          dataonly: true
+          comma: true
+        register: output
