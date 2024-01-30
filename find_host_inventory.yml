@@ -1,0 +1,75 @@
+---
+- name: Search inventory from ansible
+  hosts: localhost
+  gather_facts: false
+  ignore_errors: true
+  vars:
+    server_name_list:
+      - trqhrprd
+    tower_hostname: "{{ lookup('env', 'TOWER_HOST') }}"
+    tower_username: "{{ lookup('env','TOWER_USERNAME') }}"
+    tower_password:  "{{ lookup('env','TOWER_PASSWORD') }}"
+    server_name_fqdn_list: []
+    filtered_results: []
+    #org_id: "{{ blueid_shortcode }}"
+    #inventory_name: "scs_inventory"
+
+  tasks:
+    - name: Get Job Information
+      uri:
+        url: "{{ tower_hostname }}/api/v2/jobs/{{ tower_job_id }}"
+        method: GET
+        user: "{{ tower_username }}"
+        password: "{{ tower_password }}"
+        force_basic_auth: true
+        validate_certs: false
+        headers:
+          Content-Type: "application/json"
+        status_code: 200
+      register: job_info_results
+
+    - name: Extract Inventory ID
+      set_fact:
+        inventory_id: "{{ job_info_results.json.related.inventory }}"
+
+    - name: Block to fetch VM server_fqdn
+      block:
+        - name: List hosts from inventory
+          ansible.builtin.uri:
+            url: "{{ tower_hostname }}{{ inventory_id }}/hosts/?search={{ item|trim }}"
+            method: GET
+            user: "{{ tower_username }}"
+            password: "{{ tower_password }}"
+            force_basic_auth: true
+            validate_certs: false
+            headers:
+              Content-Type: "application/json"
+            status_code: 200
+          with_items: "{{ server_name_list }}"
+          register: list_inventory_results
+
+#    - name: Print the Results with names
+#      debug:
+#        msg: "{{ item.json.results[0].name }}"
+        #msg:  "{{ item | default({'json': {'results': [{'name': 'N/A'}]}}).json.results[0].name }}"
+#      loop: "{{ list_inventory_results.results }}"
+
+    - name: Set fact of the fetched names
+      set_fact:
+          server_name_fqdn_list: "{{ server_name_fqdn_list + [item.json.results[0].name] }}"
+      loop: "{{ list_inventory_results.results }}"
+
+    - name: Set fact of the fetched names
+      set_fact:
+        server_name_fqdn_list: "{{ server_name_fqdn_list + [item.json.results[0].name] }}"
+      loop: "{{ list_inventory_results.results }}"
+      loop_control:
+        loop_var: item
+      when: item.json.results[0].name.startswith(server_name_item)
+      vars:
+        server_name_item: "{{ item | lower }}"
+      with_items: "{{ server_name_list }}"
+
+    - name: Print results
+      debug:
+        var: server_name_fqdn_list
